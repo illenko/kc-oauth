@@ -11,6 +11,10 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+type RefreshRequest struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
 type JwtResponse struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
@@ -19,25 +23,13 @@ type JwtResponse struct {
 func main() {
 	kcClient := NewKeycloakAdminClientService()
 	cardService := NewCardService()
+	authHandler := AuthHandler{kcClient: kcClient}
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("POST /auth/login", func(w http.ResponseWriter, r *http.Request) {
-		var request LoginRequest
-		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		response := kcClient.LoginUser(request)
-
-		log.Printf("User %s logged in", request.Username)
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	})
-
-	mux.Handle("/cards", JWTMiddleware(kcClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/auth/login", authHandler.Login)
+	mux.HandleFunc("/auth/refresh", authHandler.Refresh)
+	mux.Handle("GET /cards", JWTMiddleware(kcClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return

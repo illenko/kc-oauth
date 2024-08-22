@@ -43,6 +43,18 @@ func (s *KeycloakAdminClientService) LoginUser(request LoginRequest) JwtResponse
 	}
 }
 
+func (s *KeycloakAdminClientService) RefreshToken(refreshToken string) (JwtResponse, error) {
+	ctx := context.Background()
+	token, err := s.client.RefreshToken(ctx, refreshToken, s.clientId, s.secret, s.realm)
+	if err != nil {
+		return JwtResponse{}, err
+	}
+	return JwtResponse{
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+	}, nil
+}
+
 func (s *KeycloakAdminClientService) ValidateToken(token string) bool {
 	ctx := context.Background()
 	rptResult, err := s.client.RetrospectToken(ctx, token, s.clientId, s.secret, s.realm)
