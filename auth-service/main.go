@@ -18,6 +18,7 @@ type JwtResponse struct {
 
 func main() {
 	kcClient := NewKeycloakAdminClientService()
+	cardService := NewCardService()
 
 	mux := http.NewServeMux()
 
@@ -35,6 +36,17 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 	})
+
+	mux.Handle("/cards", JWTMiddleware(kcClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		cards := cardService.GetCards()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(cards)
+	})))
 
 	log.Fatal(http.ListenAndServe(":3000", mux))
 }

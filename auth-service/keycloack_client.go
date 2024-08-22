@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	"github.com/Nerzal/gocloak/v13"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
+
+	"github.com/Nerzal/gocloak/v13"
+	"github.com/joho/godotenv"
 )
 
 type KeycloakAdminClientService struct {
@@ -40,4 +41,13 @@ func (s *KeycloakAdminClientService) LoginUser(request LoginRequest) JwtResponse
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
 	}
+}
+
+func (s *KeycloakAdminClientService) ValidateToken(token string) bool {
+	ctx := context.Background()
+	rptResult, err := s.client.RetrospectToken(ctx, token, s.clientId, s.secret, s.realm)
+	if err != nil || !*rptResult.Active {
+		return false
+	}
+	return true
 }
